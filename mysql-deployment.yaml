@@ -1,0 +1,92 @@
+# Source: https://kubernetes.io/docs/tutorials/stateful-application/mysql-wordpress-persistent-volume/
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: wpmt-cluster-mysql
+  labels:
+    app: wpmt-cluster-mysql
+spec:
+  selector:
+    app: wpmt-cluster-mysql
+    tier: mysql
+  clusterIP: None
+  ports:
+  - port: 3306
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-pv-claim
+  labels:
+    app: wpmt-cluster-mysql
+spec:
+  accessModes:
+    # Source: https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
+    # the volume can be mounted as read-write by a single node
+    - ReadWriteOnce
+  capacity:
+    storage: 5Gi
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wpmt-cluster-mysql
+  labels:
+    app: wpmt-cluster-mysql
+spec:
+  selector:
+    matchLabels:
+      app: wpmt-cluster-mysql
+      tier: mysql
+  strategy:
+    # Source: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+    # Terminate the old version and release the new one
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wpmt-cluster-mysql
+        tier: mysql
+    spec:
+      containers:
+      - image: mysql:5.6
+        name: mysql  
+        # Here we create an environment variable which will allow us to connect to the MySQL service
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              # This is the name of the 'secretGenerator' that we have declared in the kustomization.yaml file
+              name: mysql-pass
+              # And we'll use the password that is set there
+              key: password
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+        resources:
+          # The limits are the max values that can be assigned to a container
+          # The limits can be never be lower than the requests 
+          limits:
+            storage: 5Gib
+            cpu: "1"
+            memory: "1Gib"
+          # The requests are what the container is guaranteed to get 
+          requests:
+            storage: 5Gib
+            cpu: "1"
+            memory: "1Gib"
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-pv-claim 
+        
+
+
