@@ -1,14 +1,21 @@
 # Source: https://kubernetes.io/docs/tutorials/stateful-application/mysql-wordpress-persistent-volume/
+# Additional details available here:
+# https://medium.com/@containerum/how-to-deploy-wordpress-and-mysql-on-kubernetes-bda9a3fdd2d5
+
+# TODO: Add a wpmt-cluster Deployment which will use a LoadBalancer service and have the Request Router Pod
+# TODO: Add a wpmt-cluster-auth Deployment which will use a ClusterIP service and accepts requests sent to a specific port
+# TODO: Add a wpmt-cluster-signup Deployment with a ClusterIP service
+# TODO: Add a wpmt-cluster-logger Deployment with a ClusterIP service
 
 apiVersion: v1
 kind: Service
 metadata:
-  name: wpmt-cluster-mysql
+  name: wpmt-cluster-mysql    # This name will later be used as a value in the WPMT-Cluster Deployment
   labels:
-    app: wpmt-cluster-mysql
+    app: wpmt-cluster
 spec:
   selector:
-    app: wpmt-cluster-mysql
+    app: wpmt-cluster
     tier: mysql
   clusterIP: None
   ports:
@@ -19,7 +26,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: mysql-pv-claim
+  name: mysql-pv-claim # This is used in the MySQL Deployment below when declaring the volumes
   labels:
     app: wpmt-cluster-mysql
 spec:
@@ -45,7 +52,8 @@ spec:
       tier: mysql
   strategy:
     # Source: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
-    # Terminate the old version and release the new one
+    # This terminate the old version of the Deployment and then releases the new one
+    # This is preferable to a rolling update since this way we'll prevent data duplication
     type: Recreate
   template:
     metadata:
@@ -58,35 +66,44 @@ spec:
         name: mysql  
         # Here we create an environment variable which will allow us to connect to the MySQL service
         env:
-        - name: MYSQL_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              # This is the name of the 'secretGenerator' that we have declared in the kustomization.yaml file
-              name: mysql-pass
-              # And we'll use the password that is set there
-              key: password
-        ports:
-        - containerPort: 3306
-          name: mysql
-        volumeMounts:
+          - name: MYSQL_DB
+            value: wpmt_cluster_db
+          - name: MYSQL_USER
+            valueFromL:
+              - secretKeyRef:
+                # This is the name of the 'secretGenerator' that we have declared in the kustomization.yaml file
+                name: mysql-user
+                # And the MySQL username that is declared there
+                key: username
+          - name: MYSQL_USER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                # This is the name of the 'secretGenerator' that we have declared in the kustomization.yaml file
+                name: mysql-pass
+                # And we'll use the password that is set there
+                key: password
+          ports:
+          - containerPort: 3306
+            name: mysql
+          volumeMounts:
+          - name: mysql-persistent-storage
+            mountPath: /var/lib/mysql
+          resources:
+            # The limits are the max values that can be assigned to a container
+            # The limits can be never be lower than the requests
+            limits:
+              storage: 5Gib
+              cpu: "1"
+              memory: "1Gib"
+            # The requests are what the container is guaranteed to get
+            requests:
+              storage: 5Gib
+              cpu: "1"
+              memory: "1Gib"
+        volumes:
         - name: mysql-persistent-storage
-          mountPath: /var/lib/mysql
-        resources:
-          # The limits are the max values that can be assigned to a container
-          # The limits can be never be lower than the requests 
-          limits:
-            storage: 5Gib
-            cpu: "1"
-            memory: "1Gib"
-          # The requests are what the container is guaranteed to get 
-          requests:
-            storage: 5Gib
-            cpu: "1"
-            memory: "1Gib"
-      volumes:
-      - name: mysql-persistent-storage
-        persistentVolumeClaim:
-          claimName: mysql-pv-claim 
-        
+          persistentVolumeClaim:
+            claimName: mysql-pv-claim
+
 
 
