@@ -4,6 +4,13 @@ import mysql.connector
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend as crypto_backend
+from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException
+from os import environ
+import uvicorn
+
+
+app = FastAPI()
 
 __master_url__ = "https://master.wpmt.tech"
 
@@ -12,10 +19,43 @@ __cluster_url__ = "https://cluster-eu01.wpmt.tech"
 __cluster_locale__ = "EU"
 __cluster_user_count__ = None
 
-__mysql_host__ = None
-__mysql_db__ = None
-__mysql_user__ = None
-__mysql_pass__ = None
+__mysql_host__ = "localhost"
+__mysql_db__ = "wpmt_cluster_db"
+__mysql_user__ = "wpmt_cluster_user"
+# The API should receive the password via system's environment variable
+# This variable is set by Kubernetes via the "secretGenerator.yaml" file
+# Source: https://stackoverflow.com/questions/60343474/how-to-get-secret-environment-variables-implemented-by-kubernetes-into-python
+__mysql_pass__ = environ['MYSQL_USER_PASSWORD']
+
+
+#################
+    # Router
+#################
+
+class UserSignup(BaseModel):
+    name: str
+    email: str
+    password: str
+    service: str
+    country: str
+    locale: str
+    notifications: int
+    promos: int
+
+
+@app.post("/user/add", status_code=200)
+async def signup(user: UserSignup):
+    post_data_dict = user.dict()
+    if cluster_uid_generate(post_data_dict['name'], post_data_dict['email'], post_data_dict['password'],
+                         post_data_dict['service'], post_data_dict['country']. post_data_dict['locale'],
+                         post_data_dict['notifications'], post_data_dict['promos']):
+        # If the function was completed properly and returned True
+        # Then we should return a 200 OK code to the WPMT User API
+        return
+    else:
+        # TODO: Send to the Logger
+        raise HTTPException(status_code=502, detail="Error during signup")
+
 
 
 def mysql_details_get():
@@ -24,7 +64,7 @@ def mysql_details_get():
     pass
 
 
-def mysql_user_add(client_id,  email, pub_key, priv_key):
+def mysql_user_add(client_id: str,  email: str, pub_key: str, priv_key: str):
     # Source: https://pynative.com/python-mysql-database-connection/
     if None not in [client_id, email, pub_key, priv_key]:
         try:
@@ -53,7 +93,7 @@ def mysql_user_add(client_id,  email, pub_key, priv_key):
         print("[Cluster][DB][Err][User][01]: Missing User parameters. Source: [", client_id, "][", email, "].")
 
 
-def mysql_user_settings_set(client_id, mail_notifications, service_type, locale, promos):
+def mysql_user_settings_set(client_id: str, mail_notifications: int, service_type: str, locale: str, promos: int):
     if None not in [client_id, mail_notifications, service_type, locale, promos]:
         try:
             connection = mysql.connector.connect(
@@ -80,7 +120,7 @@ def mysql_user_settings_set(client_id, mail_notifications, service_type, locale,
     else:
         # TODO: Send to the Logger
         print("[Cluster][DB][Err][User][01]: Missing User parameters. Source: [", client_id, "]")
-
+    # TODO: Pass the results to the WPMT User API for further processing
 
 
 def cluster_keys_generate():
@@ -108,8 +148,8 @@ def cluster_uid_generate(name: str, email: str, password: str, service: str, cou
     if None not in [name, email, password, service, country, locale, notifications, promos]:
         # Get last user ID
         cluster_get_user_count()
-        # TODO: Potential issue here with adding an Int to the received result (could be string)
-        new_user_num = __cluster_user_count__ + 1
+        # DEBUG: Potential issue here with adding an Int to the received result (could be string)
+        new_user_num = int(__cluster_user_count__) + 1
         generated_uid = __cluster_locale__ + "-UID-" + str(new_user_num).zfill(9)
         # This is a list of the public (1st) and private(2nd) keys:
         generated_keys = cluster_keys_generate()
@@ -117,7 +157,7 @@ def cluster_uid_generate(name: str, email: str, password: str, service: str, cou
         print("[cluster_uid_generate]Keys: ", generated_keys, "Type PublicKey: ", type(generated_keys[0]), "Type PrivateKey: ", type(generated_keys[1]))
 
         # Here we add the new user to the DB along with the keys:
-        mysql_user_add(generated_uid, email, generated_keys[0], generated_keys[1])
+        mysql_user_add(generated_uid, email, password, generated_keys[0], generated_keys[1])
         # And then we save the user defined settings
         mysql_user_settings_set(generated_uid, notifications, service, locale, promos)
 
@@ -143,6 +183,7 @@ def cluster_uid_generate(name: str, email: str, password: str, service: str, cou
         }
         sent_request = requests.post(url, data=json.dumps(body), headers=headers)
         # End of sending to the Master DB
+        return True
     else:
         # TODO: Add to the Logger
         return "[Cluster][API][Err][01]: Missing parameters while singing up."
@@ -172,7 +213,5 @@ def cluster_get_user_count():
             connection.close()
 
 
-# To be removed once we add the FastAPI
 if __name__ == "__main__":
-    result = cluster_uid_generate("Todor", "Email", "Pass", "US")
-    print("UID: ", result)
+    uvicorn.run(app, host='localhost', port=6900)
