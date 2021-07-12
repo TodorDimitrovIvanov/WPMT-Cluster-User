@@ -1,9 +1,0 @@
-secretGenerator:
-  - name: mysql-pass
-    literals:
-    - password=bX6eC9cH5qG1cE5dP3mA7fZ8cM8pN3eO
-  - name: mysql-user
-    literals:
-    - username=wpmt_cluster_db_user
-resources:
-  - mysql-deployment.yaml

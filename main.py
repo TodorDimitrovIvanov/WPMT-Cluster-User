@@ -47,8 +47,8 @@ class UserSignup(BaseModel):
 async def signup(user: UserSignup):
     post_data_dict = user.dict()
     if cluster_uid_generate(post_data_dict['name'], post_data_dict['email'], post_data_dict['password'],
-                         post_data_dict['service'], post_data_dict['country']. post_data_dict['locale'],
-                         post_data_dict['notifications'], post_data_dict['promos']):
+                        post_data_dict['service'], post_data_dict['country']. post_data_dict['locale'],
+                        post_data_dict['notifications'], post_data_dict['promos']):
         # If the function was completed properly and returned True
         # Then we should return a 200 OK code to the WPMT User API
         return
@@ -214,4 +214,5 @@ def cluster_get_user_count():
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host='localhost', port=6900)
+    # Here we must use 127.0.0.1 as K8s doesn't seem to recognize localhost ....
+    uvicorn.run(app, host='127.0.0.1', port=6900)
