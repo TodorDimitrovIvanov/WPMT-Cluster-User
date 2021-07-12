@@ -1,12 +1,12 @@
+from typing import Optional
+
 import requests
-import json
 import mysql.connector
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend as crypto_backend
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException
-from os import environ
 import uvicorn
 
 
@@ -45,6 +45,11 @@ class UserSignup(BaseModel):
     promos: int
 
 
+class UserRetrieve(BaseModel):
+    email: str
+    client_id: Optional[str]
+
+
 @app.post("/user/add", status_code=200)
 async def signup(user: UserSignup):
     post_data_dict = user.dict()
@@ -60,6 +65,28 @@ async def signup(user: UserSignup):
         # TODO: Send to the Logger
         raise HTTPException(status_code=502, detail="Error during signup")
 
+
+
+@app.post("/user/get", status_code=200)
+async def user_retrieve(retrieve: UserRetrieve):
+    post_data_dict = retrieve.dict()
+
+    if post_data_dict['email'] is not None or "":
+        result = mysql_user_get(post_data_dict['email'])
+        print("Experiment: ", result, " Type: ", type(result))
+        return {
+            "results": result
+        }
+    elif post_data_dict['client_id'] is not None or "":
+        result = mysql_user_get(post_data_dict['client_id'])
+        print("Experiment: ", result, " Type: ", type(result))
+        return {
+            "results": result
+        }
+    else:
+        return{
+            "Error": "Missing 'email' or 'ID' identifier!"
+        }
 
 
 def mysql_details_get():
@@ -95,6 +122,26 @@ def mysql_user_add(client_id: str,  email: str, pub_key: str, priv_key: str):
     else:
         # TODO: Send to the Logger
         print("[Cluster][DB][Err][User][01]: Missing User parameters. Source: [", client_id, "][", email, "].")
+
+
+def mysql_user_get(identifier: str):
+    if identifier is not None or "":
+        try:
+            connection = mysql.connector.connect(
+                host = __mysql_host__,
+                database = __mysql_db__,
+                user = __mysql_user__,
+                password = __mysql_pass__)
+            if connection.is_connected():
+                cursor = connection.cursor()
+                mysql_search_query = "SELECT * FROM users WHERE client_email = %s"
+                data = identifier
+                cursor.execute(mysql_search_query, (data,))
+                result = cursor.fetchall()
+                return result
+        except mysql.connector.Error as e:
+            # TODO: Send to the Logger
+            print("[Cluster][DB][Err][01]: Error while starting the K8S MySQL Connection. Error: [", e, "].")
 
 
 def mysql_user_settings_set(client_id: str, mail_notifications: int, service_type: str, locale: str, promos: int):

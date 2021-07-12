@@ -1,0 +1,32 @@
+
+How to install Python requirements:
+-----------------------------------
+Instructions:
+    cd ~/src
+    pip3 install --no-cache-dir -r requirements.txt
+
+
+Endpoints:
+-----------
+URL:
+    /user/add
+Format:
+    {
+    "name": "Todor Ivanov",
+    "email": "todor@wpmt.org",
+    "password": "M03t0Kuch3nc3",
+    "service": "premium",
+    "country": "Bulgaria",
+    "locale": "EN",
+    "notifications": 1,
+    "promos": 1
+    }
+
+URL:
+    /user/get
+Format:
+    {
+    "email": "todor@wpmt.org",
+    "client_id": ""
+    }
+
