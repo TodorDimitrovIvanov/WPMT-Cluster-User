@@ -175,7 +175,7 @@ def mysql_user_settings_set(client_id: str, mail_notifications: int, service_typ
                 cursor.execute(mysql_insert_query, mysql_data)
                 connection.commit()
                 message = "[Cluster][DB][Info]: Added user [" + client_id + "]."
-                send_to_logger("info", message, client_id, email="None")
+                send_to_logger("info", message, client_id, client_email="None")
         except mysql.connector.Error as e:
             message = "[Cluster][Error][DB][01][mysql_user_settings_set][" + client_id + "]: Error while starting the K8S MySQL Connection! Full error: [" + str(e) + "]."
             send_to_logger("error", message, client_id=client_id, client_email="None")
