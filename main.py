@@ -40,7 +40,7 @@ __app_headers__ = {
 
 def send_to_logger(err_type, message, client_id: "None", client_email: "None"):
     # TODO: Find a way to get the user's IP address and add it to the message
-    print("Message: ", message, "Type: ", err_type(message))
+    print("Message: ", message, "Type: ", err_type)
     global __app_headers__
     body = {
         "client_id": client_id,
