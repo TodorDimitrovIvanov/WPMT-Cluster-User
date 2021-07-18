@@ -38,14 +38,14 @@ __app_headers__ = {
 }
 
 
-def send_to_logger(err_type, message, client_id: "None", client_email: "None"):
+def send_to_logger(err_type, message, client_id="None", client_email="None"):
     # TODO: Find a way to get the user's IP address and add it to the message
     print("Message: ", message, "Type: ", err_type)
     global __app_headers__
     body = {
         "client_id": client_id,
         "email": client_email,
-        "type": "access",
+        "type": err_type,
         "message": message
     }
     send_request = requests.post(__cluster_logger_url__, data=json.dumps(body), headers=__app_headers__)
@@ -185,7 +185,7 @@ def mysql_user_settings_set(client_id: str, mail_notifications: int, service_typ
     else:
         message = "[Cluster][Error][Signup][01][mysql_user_settings_set]: Error during the signup process. Missing parameters!"
         send_to_logger("error", message, client_id=None, client_email=None)
-    # TODO: Pass the results to the WPMT User API for further processing
+        # TODO: Pass the results to the WPMT User API for further processing
 
 
 def cluster_keys_generate():
