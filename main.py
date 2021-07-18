@@ -77,19 +77,10 @@ async def signup(user: UserSignup):
     # Here the cluster_uid_generate function will generate a new key pair
     # Save the key pair within the DB along with the other Client details
     # And if successful returns True
-    if cluster_uid_generate(post_data_dict['name'], post_data_dict['email'], post_data_dict['password'],
-                    post_data_dict['service'], post_data_dict['country'], post_data_dict['locale'],
-                    post_data_dict['notifications'], post_data_dict['promos']):
-        # If the function was completed properly and returned True
-        # Then we should return a 200 OK code to the WPMT User API
-        return {
-            "Response": "User registration completed!"
-        }
-    else:
-        message = "[Cluster][Error][Signup][01]: Error during the signup process. Missing parameters!"
-        send_to_logger("error", message, client_id="None", client_email="None")
-        raise HTTPException(status_code=502, detail="Error during signup")
-
+    result = cluster_uid_generate(post_data_dict['name'], post_data_dict['email'], post_data_dict['password'],
+                                  post_data_dict['service'], post_data_dict['country'], post_data_dict['locale'],
+                                  post_data_dict['notifications'], post_data_dict['promos'])
+    return result
 
 
 @app.post("/user/get", status_code=200)
@@ -226,7 +217,8 @@ def cluster_uid_generate(name: str, email: str, password: str, service: str, cou
             global __cluster_user_count__
             new_user_num = __cluster_user_count__[0][0] + 1
             generated_uid = __cluster_locale__ + "-UID-" + str(new_user_num).zfill(9)
-            # This is a list of the public (1st) and private(2nd) keys:
+
+            # This function returns a list of the generated keys - public (1st) and private(2nd)
             generated_keys = cluster_keys_generate()
 
             # Here we add the new user to the DB along with the keys:
@@ -258,13 +250,20 @@ def cluster_uid_generate(name: str, email: str, password: str, service: str, cou
             # sent_request = requests.post(url, data=json.dumps(body), headers=headers)
 
             # End of sending to the Master DB
-            return True
+            return {
+                "client_id": generated_uid,
+                "client_key": generated_keys[0]
+            }
         else:
-            return "[Cluster][API][Err][02]: Couldn't retrieve user count."
+            return {
+                "Error": "[Cluster][API][Err][02]: Couldn't retrieve user count."
+            }
     else:
         message = "[Cluster][Error][Signup][01][cluster_uid_generate]: Error during the signup process. Missing parameters!"
         send_to_logger("error", message, client_id=None, client_email=None)
-        return "[Cluster][Error][Signup][01][cluster_uid_generate]: Error during the signup process. Missing parameters!"
+        return {
+            "Error": "[Cluster][Error][Signup][01][cluster_uid_generate]: Error during the signup process. Missing parameters!"
+        }
 
 
 def cluster_get_user_count():
