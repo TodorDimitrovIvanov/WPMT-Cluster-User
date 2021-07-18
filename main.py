@@ -1,5 +1,5 @@
 from typing import Optional
-
+import json
 import requests
 import mysql.connector
 from cryptography.hazmat.primitives import serialization as crypto_serialization
@@ -12,10 +12,11 @@ import uvicorn
 
 app = FastAPI()
 
-__master_url__ = "https://master.wpmt.tech"
+__master_url__ = "https://master.wpmt.org"
 
-__cluster_name__ = "cluster-eu01.wpmt.tech"
-__cluster_url__ = "https://cluster-eu01.wpmt.tech"
+__cluster_name__ = "cluster-eu01.wpmt.org"
+__cluster_url__ = "https://cluster-eu01.wpmt.org"
+__cluster_logger_url__ = "http://cluster-eu01.wpmt.tech/log/save"
 __cluster_locale__ = "EU"
 __cluster_user_count__ = None
 
@@ -29,11 +30,31 @@ __mysql_user__ = "cluser_eu01_user"
 #   __mysql_pass__ = environ['MYSQL_USER_PASSWORD']
 __mysql_pass__ = "kP6hE3zE7aJ7nQ6i"
 
+__app_headers__ = {
+    'Host': 'cluster-eu01.wpmt.org',
+    'User-Agent': 'WPMT-Auth/1.0',
+    'Referer': 'http://cluster-eu01.wpmt.org/user',
+    'Content-Type': 'application/json'
+}
+
+
+def send_to_logger(err_type, message, client_id: "None", client_email: "None"):
+    # TODO: Find a way to get the user's IP address and add it to the message
+    print("Message: ", message, "Type: ", err_type(message))
+    global __app_headers__
+    body = {
+        "client_id": client_id,
+        "email": client_email,
+        "type": "access",
+        "message": message
+    }
+    send_request = requests.post(__cluster_logger_url__, data=json.dumps(body), headers=__app_headers__)
+
 #################
     # Router
 #################
 
-
+# Here we define the format of the POST requests that we expect to receive in order to interact with the API service
 class UserSignup(BaseModel):
     name: str
     email: str
@@ -53,16 +74,20 @@ class UserRetrieve(BaseModel):
 @app.post("/user/add", status_code=200)
 async def signup(user: UserSignup):
     post_data_dict = user.dict()
+    # Here the cluster_uid_generate function will generate a new key pair
+    # Save the key pair within the DB along with the other Client details
+    # And if successful returns True
     if cluster_uid_generate(post_data_dict['name'], post_data_dict['email'], post_data_dict['password'],
-                        post_data_dict['service'], post_data_dict['country'], post_data_dict['locale'],
-                        post_data_dict['notifications'], post_data_dict['promos']):
+                    post_data_dict['service'], post_data_dict['country'], post_data_dict['locale'],
+                    post_data_dict['notifications'], post_data_dict['promos']):
         # If the function was completed properly and returned True
         # Then we should return a 200 OK code to the WPMT User API
         return {
             "Response": "User registration completed!"
         }
     else:
-        # TODO: Send to the Logger
+        message = "[Cluster][Error][Signup][01]: Error during the signup process. Missing parameters!"
+        send_to_logger("error", message, client_id="None", client_email="None")
         raise HTTPException(status_code=502, detail="Error during signup")
 
 
@@ -73,15 +98,13 @@ async def user_retrieve(retrieve: UserRetrieve):
 
     if post_data_dict['email'] is not None or "":
         result = mysql_user_get(post_data_dict['email'])
-        print("Experiment: ", result, " Type: ", type(result))
         return {
-            "results": result
+            "Results": result
         }
     elif post_data_dict['client_id'] is not None or "":
         result = mysql_user_get(post_data_dict['client_id'])
-        print("Experiment: ", result, " Type: ", type(result))
         return {
-            "results": result
+            "Results": result
         }
     else:
         return{
@@ -111,17 +134,17 @@ def mysql_user_add(client_id: str,  email: str, pub_key: str, priv_key: str):
                 mysql_data = (client_id, email, pub_key, priv_key)
                 cursor.execute(mysql_insert_query, mysql_data)
                 connection.commit()
-                # TODO: Send to the Logger
-                print("[Cluster][DB][Info]: Added user [", client_id, "][", email, "].")
+                message = "[Cluster][DB][Info]: Added user [" + email + "]."
+                send_to_logger("info", message, client_id, email)
         except mysql.connector.Error as e:
-            # TODO: Send to the Logger
-            print("[Cluster][DB][Err][01]: Error while starting the K8S MySQL Connection. Error: [", e, "].")
+            message = "[Cluster][Error][DB][01][mysql_user_add][" + email + "]: Error while starting the K8S MySQL Connection! Full error: [" + str(e) + "]."
+            send_to_logger("error", message, client_id, email)
         finally:
             if connection.is_connected():
                 connection.close()
     else:
-        # TODO: Send to the Logger
-        print("[Cluster][DB][Err][User][01]: Missing User parameters. Source: [", client_id, "][", email, "].")
+        message = "[Cluster][Error][Signup][01][mysql_user_add]: Error during the signup process. Missing parameters!"
+        send_to_logger("error", message, client_id=None, client_email=None)
 
 
 def mysql_user_get(identifier: str):
@@ -140,8 +163,8 @@ def mysql_user_get(identifier: str):
                 result = cursor.fetchall()
                 return result
         except mysql.connector.Error as e:
-            # TODO: Send to the Logger
-            print("[Cluster][DB][Err][01]: Error while starting the K8S MySQL Connection. Error: [", e, "].")
+            message = "[Cluster][Error][DB][01][mysql_user_get][" + identifier + "]: Error while starting the K8S MySQL Connection! Full error: [" + str(e) + "]."
+            send_to_logger("error", message, client_id=identifier, client_email=identifier)
 
 
 def mysql_user_settings_set(client_id: str, mail_notifications: int, service_type: str, locale: str, promos: int):
@@ -160,17 +183,17 @@ def mysql_user_settings_set(client_id: str, mail_notifications: int, service_typ
                 mysql_data = (client_id, mail_notifications, service_type, locale, promos)
                 cursor.execute(mysql_insert_query, mysql_data)
                 connection.commit()
-                # TODO: Send to the Logger
-                print("[Cluster][DB][Info]: Added user settings [", client_id, "].")
+                message = "[Cluster][DB][Info]: Added user [" + client_id + "]."
+                send_to_logger("info", message, client_id, email="None")
         except mysql.connector.Error as e:
-            # TODO: Send to the Logger
-            print("[Cluster][DB][Err][01]: Error while starting the K8S MySQL Connection. Error: [", e, "].")
+            message = "[Cluster][Error][DB][01][mysql_user_settings_set][" + client_id + "]: Error while starting the K8S MySQL Connection! Full error: [" + str(e) + "]."
+            send_to_logger("error", message, client_id=client_id, client_email="None")
         finally:
             if connection.is_connected():
                 connection.close()
     else:
-        # TODO: Send to the Logger
-        print("[Cluster][DB][Err][User][01]: Missing User parameters. Source: [", client_id, "]")
+        message = "[Cluster][Error][Signup][01][mysql_user_settings_set]: Error during the signup process. Missing parameters!"
+        send_to_logger("error", message, client_id=None, client_email=None)
     # TODO: Pass the results to the WPMT User API for further processing
 
 
@@ -183,12 +206,12 @@ def cluster_keys_generate():
     )
     private_key = key.private_bytes(
         crypto_serialization.Encoding.PEM,
-        crypto_serialization.PrivateFormat.TraditionalOpenSSL,
+        crypto_serialization.PrivateFormat.PKCS8,
         crypto_serialization.NoEncryption()
     )
     public_key = key.public_key().public_bytes(
-        crypto_serialization.Encoding.OpenSSH,
-        crypto_serialization.PublicFormat.OpenSSH
+        crypto_serialization.Encoding.PEM,
+        crypto_serialization.PublicFormat.SubjectPublicKeyInfo
     )
     return [public_key, private_key]
 
@@ -239,8 +262,9 @@ def cluster_uid_generate(name: str, email: str, password: str, service: str, cou
         else:
             return "[Cluster][API][Err][02]: Couldn't retrieve user count."
     else:
-        # TODO: Add to the Logger
-        return "[Cluster][API][Err][01]: Missing parameters while singing up."
+        message = "[Cluster][Error][Signup][01][cluster_uid_generate]: Error during the signup process. Missing parameters!"
+        send_to_logger("error", message, client_id=None, client_email=None)
+        return "[Cluster][Error][Signup][01][cluster_uid_generate]: Error during the signup process. Missing parameters!"
 
 
 def cluster_get_user_count():
@@ -261,6 +285,8 @@ def cluster_get_user_count():
             print("Experiment: ", query_result, " Type: ", type(query_result))
             __cluster_user_count__ = query_result
     except mysql.connector.Error as e:
+        message = "[Cluster][Error][DB][01][cluster_get_user_count]: Error while starting the K8S MySQL Connection! Full error: [" + str(e) + "]."
+        send_to_logger("error", message, client_id="None", client_email="None")
         # TODO: Send to the Logger
         print("[Cluster][DB][Err][01]: Error while starting the K8S MySQL Connection. Error: [", e, "].")
     finally:

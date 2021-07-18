@@ -3,7 +3,7 @@ How to install Python requirements:
 -----------------------------------
 Instructions:
     cd ~/src
-    pip3 install --no-cache-dir -r requirements.txt
+    pip3.9 install --no-cache-dir -r requirements.txt
 
 
 Endpoints:
@@ -29,4 +29,38 @@ Format:
     "email": "todor@wpmt.org",
     "client_id": ""
     }
+
+URL:
+    /log/save
+Format:
+    {
+    "client_id": "EU-UID-000000002",
+    "email": "magi@wpmt.org",
+    "type": "info",
+    "message": "First Log Message!"
+}
+
+URL:
+    /log/get
+Format:
+{
+    "client_id": "EU-UID-000000002",
+    "type": "info",  ------!-----> or error or access
+    "date": "13-Jul-2021",
+    "count": 0 -----!-----> This is the default value and it returns all entries
+}
+
+How to send requests using CURL:
+--------------------------------
+
+
+
+
+
+
+How to check system logs if no relevant logs are saved by the Logger:
+----------------------------------------------------------------------
+Simply enter and scroll to the bottom for the latest entries:
+    sudo journalctl -u ___SERVICE_NAME___
+N.B. This is the place where the output from "print" commands is saved
 
