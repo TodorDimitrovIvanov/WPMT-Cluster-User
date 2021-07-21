@@ -127,15 +127,16 @@ def mysql_user_add(client_id: str,  email: str, pub_key: str, priv_key: str):
                 connection.commit()
                 message = "[Cluster][DB][Info]: Added user [" + email + "]."
                 send_to_logger("info", message, client_id, email)
+                connection.close()
+                return True
         except mysql.connector.Error as e:
             message = "[Cluster][Error][DB][01][mysql_user_add][" + email + "]: Error while starting the K8S MySQL Connection! Full error: [" + str(e) + "]."
             send_to_logger("error", message, client_id, email)
-        finally:
-            if connection.is_connected():
-                connection.close()
+            return False
     else:
         message = "[Cluster][Error][Signup][01][mysql_user_add]: Error during the signup process. Missing parameters!"
         send_to_logger("error", message, client_id=None, client_email=None)
+        return False
 
 
 def mysql_user_get(identifier: str):
@@ -209,61 +210,78 @@ def cluster_keys_generate():
 
 def cluster_uid_generate(name: str, email: str, password: str, service: str, country: str, locale: str, notifications: int, promos: int):
     # Here the notifications and promos params should be either a 0 or 1.
+    try:
+        if None not in [name, email, password, service, country, locale, notifications, promos]:
+            # Get last user ID
+            if cluster_get_user_count():
+                # DEBUG: Potential issue here with adding an Int to the received result (could be string)
+                global __cluster_user_count__
+                new_user_num = __cluster_user_count__[0][0] + 1
+                generated_uid = __cluster_locale__ + "-UID-" + str(new_user_num).zfill(9)
 
-    if None not in [name, email, password, service, country, locale, notifications, promos]:
-        # Get last user ID
-        if cluster_get_user_count():
-            # DEBUG: Potential issue here with adding an Int to the received result (could be string)
-            global __cluster_user_count__
-            new_user_num = __cluster_user_count__[0][0] + 1
-            generated_uid = __cluster_locale__ + "-UID-" + str(new_user_num).zfill(9)
+                # This function returns a list of the generated keys - public (1st) and private(2nd)
+                generated_keys = cluster_keys_generate()
 
-            # This function returns a list of the generated keys - public (1st) and private(2nd)
-            generated_keys = cluster_keys_generate()
+                # Here we add the new user to the DB along with the keys:
+                if mysql_user_add(generated_uid, email, generated_keys[0], generated_keys[1]):
+                    # And then we save the user defined settings
+                    mysql_user_settings_set(generated_uid, notifications, service, locale, promos)
 
-            # Here we add the new user to the DB along with the keys:
-            mysql_user_add(generated_uid, email, generated_keys[0], generated_keys[1])
-            # And then we save the user defined settings
-            mysql_user_settings_set(generated_uid, notifications, service, locale, promos)
+                    # Send the registered users and details to the Master DB
+                    # Source: https://stackoverflow.com/questions/10768522/python-send-post-with-header
+                    url = __master_url__ + "/api/user/signup"
+                    headers = {
+                        'Host': 'master.wpmt.tech',
+                        'User-Agent': 'WPMT-Cluster/1.0',
+                        'Referer': 'https://cluster-eu01.wpmt.tech/api/user/signup',
+                        'Content-Type': 'application/json'
+                    }
+                    body = {
+                        'client_id': generated_uid,
+                        'name': name,
+                        'email': email,
+                        'service': service,
+                        'password': password,
+                        'country': country,
+                        'locale': locale,
+                        'notifications': notifications,
+                        'promos': promos,
+                    }
+                    # TODO: Temporarily disabled until we get the master server running
+                    # sent_request = requests.post(url, data=json.dumps(body), headers=headers)
 
-            # Send the registered users and details to the Master DB
-            # Source: https://stackoverflow.com/questions/10768522/python-send-post-with-header
-            url = __master_url__ + "/api/user/signup"
-            headers = {
-                'Host': 'master.wpmt.tech',
-                'User-Agent': 'WPMT-Cluster/1.0',
-                'Referer': 'https://cluster-eu01.wpmt.tech/api/user/signup',
-                'Content-Type': 'application/json'
-            }
-            body = {
-                'client_id': generated_uid,
-                'name': name,
-                'email': email,
-                'service': service,
-                'password': password,
-                'country': country,
-                'locale': locale,
-                'notifications': notifications,
-                'promos': promos,
-            }
-            # TODO: Temporarily disabled until we get the master server running
-            # sent_request = requests.post(url, data=json.dumps(body), headers=headers)
-
-            # End of sending to the Master DB
-            return {
-                "client_id": generated_uid,
-                "client_key": generated_keys[0]
-            }
+                    # End of sending to the Master DB
+                    err_resp = {
+                        "client_id": generated_uid,
+                        "client_key": generated_keys[0]
+                    }
+                    return err_resp
+                else:
+                    err_resp = {
+                        "Response": "Error",
+                        "Message": "[Cluster][API][Err][03]: Couldn't add new user account. Most likely caused by duplicate email addresses"
+                    }
+                    return err_resp
+            else:
+                return {
+                    "Response": "Error",
+                    "Message": "[Cluster][API][Err][02]: Couldn't retrieve user count."
+                }
         else:
-            return {
-                "Error": "[Cluster][API][Err][02]: Couldn't retrieve user count."
+            message = "[Cluster][Error][Signup][01][cluster_uid_generate]: Error during the signup process. Missing parameters!"
+            send_to_logger("error", message, client_id=None, client_email=None)
+            err_resp = {
+                "Response": "Error",
+                "Message": "[Cluster][Error][Signup][01][cluster_uid_generate]: Error during the signup process. Missing parameters!"
             }
-    else:
-        message = "[Cluster][Error][Signup][01][cluster_uid_generate]: Error during the signup process. Missing parameters!"
-        send_to_logger("error", message, client_id=None, client_email=None)
-        return {
-            "Error": "[Cluster][Error][Signup][01][cluster_uid_generate]: Error during the signup process. Missing parameters!"
-        }
+            return err_resp
+    except mysql.connector.Error as e:
+        message = "[Cluster][Error][DB][01][mysql_user_add][" + email + "]: Error while starting the K8S MySQL Connection! Full error: [" + str(e) + "]."
+        send_to_logger("error", message, client_id=None, client_email=email)
+        return HTTPException(
+            status_code=500,
+            detail=message,
+        )
 
 
 def cluster_get_user_count():
@@ -281,13 +299,11 @@ def cluster_get_user_count():
             cursor.execute(mysql_insert_query)
             query_result = cursor.fetchall()
             global __cluster_user_count__
-            print("Experiment: ", query_result, " Type: ", type(query_result))
             __cluster_user_count__ = query_result
     except mysql.connector.Error as e:
         message = "[Cluster][Error][DB][01][cluster_get_user_count]: Error while starting the K8S MySQL Connection! Full error: [" + str(e) + "]."
         send_to_logger("error", message, client_id="None", client_email="None")
-        # TODO: Send to the Logger
-        print("[Cluster][DB][Err][01]: Error while starting the K8S MySQL Connection. Error: [", e, "].")
+        return False
     finally:
         return True
 
