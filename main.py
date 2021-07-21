@@ -223,6 +223,7 @@ def cluster_uid_generate(name: str, email: str, password: str, service: str, cou
                 generated_keys = cluster_keys_generate()
 
                 # Here we add the new user to the DB along with the keys:
+                # The function returns Boolean and if False is returned we'll return an error message
                 if mysql_user_add(generated_uid, email, generated_keys[0], generated_keys[1]):
                     # And then we save the user defined settings
                     mysql_user_settings_set(generated_uid, notifications, service, locale, promos)
