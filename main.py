@@ -252,11 +252,12 @@ def cluster_uid_generate(name: str, email: str, password: str, service: str, cou
                     # sent_request = requests.post(url, data=json.dumps(body), headers=headers)
 
                     # End of sending to the Master DB
-                    err_resp = {
+                    response = {
+                        "Response": "Success",
                         "client_id": generated_uid,
                         "client_key": generated_keys[0]
                     }
-                    return err_resp
+                    return response
                 else:
                     err_resp = {
                         "Response": "Error",
