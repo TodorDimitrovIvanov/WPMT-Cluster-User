@@ -12,11 +12,11 @@ import uvicorn
 
 app = FastAPI()
 
-__master_url__ = "https://master.wpmt.org"
+__master_url__ = "http://master.wpmt.org"
 
 __cluster_name__ = "cluster-eu01.wpmt.org"
-__cluster_url__ = "https://cluster-eu01.wpmt.org"
-__cluster_logger_url__ = "http://cluster-eu01.wpmt.tech/log/save"
+__cluster_url__ = "http://cluster-eu01.wpmt.org"
+__cluster_logger_url__ = "http://cluster-eu01.wpmt.org/log/save"
 __cluster_locale__ = "EU"
 __cluster_user_count__ = None
 
@@ -134,7 +134,7 @@ def mysql_user_add(client_id: str,  email: str, pub_key: str, priv_key: str):
             send_to_logger("error", message, client_id, email)
             return False
     else:
-        message = "[Cluster][Error][Signup][01][mysql_user_add]: Error during the signup process. Missing parameters!"
+        message = "[Cluster][Signup][Error][01][mysql_user_add]: Error during the signup process. Missing parameters!"
         send_to_logger("error", message, client_id=None, client_email=None)
         return False
 
