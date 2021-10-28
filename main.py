@@ -22,7 +22,7 @@ __cluster_user_count__ = None
 
 __mysql_host__ = "localhost"
 __mysql_db__ = "cluster_02"
-__mysql_user__ = "cluser_eu01_user"
+__mysql_user__ = "cluser_eu02_user"
 # The API should receive the password via system's environment variable
 # This variable is set by Kubernetes via the "secretGenerator.yaml" file
 # Source: https://stackoverflow.com/questions/60343474/how-to-get-secret-environment-variables-implemented-by-kubernetes-into-python
@@ -312,4 +312,4 @@ def cluster_get_user_count():
 
 if __name__ == "__main__":
     # Here we must use 127.0.0.1 as K8s doesn't seem to recognize localhost ....
-    uvicorn.run(app, host='127.0.0.1', port=6900)
+    uvicorn.run(app, host='0.0.0.0', port=6900)
