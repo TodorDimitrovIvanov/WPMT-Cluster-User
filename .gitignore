@@ -2,3 +2,4 @@ venv/
 .git/
 .idea/
 __pycache__/
+*.bak
