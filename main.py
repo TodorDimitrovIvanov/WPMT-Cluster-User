@@ -12,6 +12,7 @@ import uvicorn
 
 app = FastAPI()
 
+
 __master_url__ = "http://master.wpmt.org"
 
 __cluster_name__ = "cluster-02.wpmt.org"
