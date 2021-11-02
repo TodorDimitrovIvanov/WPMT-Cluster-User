@@ -25,7 +25,7 @@ pipeline{
 			steps{
 				script{
 					sh """
-						docker build -t dev/wpmt-cluster-user:$imageVERSION -f Dockerfile .
+						docker build -t dev/wpmt-cluster-user:$imageVersion -f Dockerfile .
 					"""
 				}
 			}
@@ -34,7 +34,7 @@ pipeline{
 			steps{
 				script{
 					sh """
-						docker tag dev/wpmt-cluster-user:$imageVERSION $dockerRegistry/$dockerUsername/$imageVersion
+						docker tag dev/wpmt-cluster-user:$imageVersion $dockerRegistry/$dockerUsername/$imageVersion
 						docker push $dockerRegistry/$dockerUsername/$imageVersion 
 					"""
 				}
