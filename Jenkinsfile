@@ -1,7 +1,9 @@
  def app
 
 pipeline{
-
+	agent{
+		label 'jenkins-slave-agent-01'
+	}
 	environment{ 
 	dockerRegistry = "https://docker-registry.wpmt.org"
 	dockerUsername = "docker-user"
