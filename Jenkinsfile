@@ -6,19 +6,22 @@ pipeline{
 	dockerRegistry = "https://docker-registry.wpmt.org"
 	dockerUsername = "docker-user"
 	}
-	agent{
-	label 'jenkins-slave-agent-01'
-	}
 	// Here we declare that our Jenkins Agent will be 
 	// using Python 3.9.2 image from the public Docker registry
 	stages{
 		// Here we declare the steps of the Pipeline
 		stage ('Checkout from GitHub'){
+			agent{
+				label 'jenkins-slave-agent-01'
+			}
 			steps{
 				checkout scm
 			}
 		}
 		stage('Build Docker image'){
+			agent{
+				label 'jenkins-slave-agent-01'
+			}
 			steps{
 				script{
 					def imageVersion = readFile('VERSION')
@@ -29,6 +32,9 @@ pipeline{
 			}
 		}
 		stage('Push Docker image'){
+			agent{
+				label 'jenkins-slave-agent-01'
+			}
 			steps{
 				script{
 					def imageVersion = readFile('VERSION')
@@ -40,6 +46,9 @@ pipeline{
 			}
 		}
 		stage('Provision image'){
+			agent{
+				label 'jenkins-slave-agent-01'
+			}
 			steps{
 				script{
 					// TODO: Add Helm intergration
