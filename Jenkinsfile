@@ -16,14 +16,12 @@ pipeline{
 		stage ('Checkout from GitHub'){
 			steps{
 				checkout scm
-				script{
-					def imageVersion = readFile('VERSION')
-				}
 			}
 		}
 		stage('Build Docker image'){
 			steps{
 				script{
+					def imageVersion = readFile('VERSION')
 					sh """
 						docker build -t dev/wpmt-cluster-user:$imageVersion -f Dockerfile .
 					"""
@@ -33,6 +31,7 @@ pipeline{
 		stage('Push Docker image'){
 			steps{
 				script{
+					def imageVersion = readFile('VERSION')
 					sh """
 						docker tag dev/wpmt-cluster-user:$imageVersion $dockerRegistry/$dockerUsername/$imageVersion
 						docker push $dockerRegistry/$dockerUsername/$imageVersion 
