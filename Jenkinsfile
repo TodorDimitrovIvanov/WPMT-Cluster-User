@@ -1,6 +1,7 @@
+ def app
 
 pipeline{
-	def app
+
 	environment{ 
 	dockerRegistry = "https://docker-registry.wpmt.org"
 	dockerUsername = "docker-user"
@@ -22,12 +23,29 @@ pipeline{
 		}
 		stage('Build Docker image'){
 			steps{
-				app = docker.build("dev/docker-user:${imageVERSION}")
+				script{
+					sh """
+						docker build -t dev/wpmt-cluster-user:$imageVERSION -f Dockerfile .
+					"""
+				}
 			}
 		}
 		stage('Push Docker image'){
-			withDockerRegistry("${dockerRegistry}", "docker-registry"){
-				app.push("${dockerRegistry}/${dockerUsername}/${imageVersion}")
+			steps{
+				script{
+					sh """
+						docker tag dev/wpmt-cluster-user:$imageVERSION $dockerRegistry/$dockerUsername/$imageVersion
+						docker push $dockerRegistry/$dockerUsername/$imageVersion 
+					"""
+				}
+			}
+		}
+		stage('Provision image'){
+			steps{
+				script{
+					// TODO: Add Helm intergration
+					echo(message: "Helm integration not yet completed")
+				}
 			}
 		}
 	}
