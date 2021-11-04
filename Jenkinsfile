@@ -1,4 +1,4 @@
- def app
+def app
 
 pipeline{
 	agent{
@@ -27,9 +27,7 @@ pipeline{
 			steps{
 				script{
 					def imageVersion = readFile('VERSION')
-					sh """
-						docker build -t dev/wpmt-cluster-user:$imageVersion -f Dockerfile .
-					"""
+					app = docker.build("dev/wpmt-cluster-user:$imageVersion")
 				}
 			}
 		}
@@ -40,10 +38,8 @@ pipeline{
 			steps{
 				script{
 					def imageVersion = readFile('VERSION')
-					sh """
-						docker tag dev/wpmt-cluster-user:$imageVersion $dockerRegistry/$dockerUsername/$imageVersion
-						docker push $dockerRegistry/$dockerUsername/$imageVersion 
-					"""
+					app.tagg("dev/wpmt-cluster-user:$imageVersion", "$dockerRegistry/$dockerUsername/$imageVersion")
+					app.push("$dockerRegistry/$dockerUsername/$imageVersion")
 				}
 			}
 		}
