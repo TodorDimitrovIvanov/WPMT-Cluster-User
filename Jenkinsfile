@@ -27,7 +27,9 @@ pipeline{
 			steps{
 				script{
 					def imageVersion = readFile('VERSION')
-					app = docker.build("dev/wpmt-cluster-user:$imageVersion")
+					sh """
+						docker build -t dev/wpmt-cluster-user:$imageVersion -f Dockerfile .
+					"""
 				}
 			}
 		}
@@ -38,8 +40,10 @@ pipeline{
 			steps{
 				script{
 					def imageVersion = readFile('VERSION')
-					app.tagg("dev/wpmt-cluster-user:$imageVersion", "$dockerRegistry/$dockerUsername/$imageVersion")
-					app.push("$dockerRegistry/$dockerUsername/$imageVersion")
+					sh """
+						docker tag dev/wpmt-cluster-user:$imageVersion $dockerRegistry/$dockerUsername/$imageVersion
+						docker push $dockerRegistry/$dockerUsername/$imageVersion 
+					"""
 				}
 			}
 		}
