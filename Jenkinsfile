@@ -41,7 +41,7 @@ pipeline{
 				script{
 					def imageVersion = readFile('VERSION')
 					sh """
-						dockerPassword=$(env | grep dockerPassword);
+						dockerPassword=env | grep dockerPassword;
 						docker login -u $dockerUsername -p $dockerPassword
 						docker tag dev/wpmt-cluster-user:$imageVersion $dockerUsername/wpmt-cluster-user:$imageVersion
 						docker push $dockerRegistry/$dockerUsername/wpmt-cluster-user:$imageVersion 
