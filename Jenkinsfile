@@ -6,9 +6,8 @@ pipeline{
 	}
 	environment{ 
 	dockerRegistry = "docker-registry.wpmt.org"
+	dockerRepo = "wpmt-cluster-user"
 	dockerCredentials = credentials('docker-registry')
-	dockerUsername = dockerCredentials_USR
-	dockerPassword = dockerCredentials_PSW
 	}
 	// Here we declare that our Jenkins Agent will be 
 	// using Python 3.9.2 image from the public Docker registry
@@ -30,7 +29,7 @@ pipeline{
 				script{
 					def imageVersion = readFile('VERSION')
 					sh """
-						docker build -t dev/wpmt-cluster-user:$imageVersion -f Dockerfile .
+						docker build -t dev/$dockerRepo:$imageVersion -f Dockerfile .
 					"""
 				}
 			}
@@ -43,9 +42,9 @@ pipeline{
 				script{
 					def imageVersion = readFile('VERSION')
 					sh """
-						docker login -u $dockerUsername -p $dockerPassword
-						docker tag dev/wpmt-cluster-user:$imageVersion $dockerUsername/wpmt-cluster-user:$imageVersion
-						docker push $dockerRegistry/$dockerUsername/wpmt-cluster-user:$imageVersion 
+						docker login -u $dockerCredentials_USR -p $dockerCredentials_PSW
+						docker tag dev/$dockerRepo:$imageVersion $dockerCredentials_USR/$dockerRepo:$imageVersion
+						docker push $dockerRegistry/$dockerCredentials_USR/$dockerRepo:$imageVersion 
 					"""
 				}
 			}
