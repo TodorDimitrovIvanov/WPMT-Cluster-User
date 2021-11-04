@@ -43,8 +43,8 @@ pipeline{
 					def imageVersion = readFile('VERSION')
 					sh """
 						docker login $dockerRegistry -u $dockerCredentials_USR -p $dockerCredentials_PSW
-						docker tag dev/$dockerRepo:$imageVersion $dockerCredentials_USR/$dockerRepo:$imageVersion
-						docker push $dockerCredentials_USR/$dockerRepo:$imageVersion 
+						docker tag dev/$dockerRepo:$imageVersion $dockerRegistry/$dockerCredentials_USR/$dockerRepo:$imageVersion
+						docker push $dockerRegistry/$dockerCredentials_USR/$dockerRepo:$imageVersion 
 					"""
 				}
 			}
