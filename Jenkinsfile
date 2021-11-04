@@ -42,7 +42,7 @@ pipeline{
 				script{
 					def imageVersion = readFile('VERSION')
 					sh """
-						docker login -u $dockerCredentials_USR -p $dockerCredentials_PSW
+						docker login $dockerRegistry -u $dockerCredentials_USR -p $dockerCredentials_PSW
 						docker tag dev/$dockerRepo:$imageVersion $dockerCredentials_USR/$dockerRepo:$imageVersion
 						docker push $dockerRegistry/$dockerCredentials_USR/$dockerRepo:$imageVersion 
 					"""
