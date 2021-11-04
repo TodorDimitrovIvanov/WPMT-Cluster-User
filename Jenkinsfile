@@ -41,8 +41,8 @@ pipeline{
 				script{
 					def imageVersion = readFile('VERSION')
 					sh """
-						docker tag dev/wpmt-cluster-user:$imageVersion $dockerRegistry/$dockerUsername:$imageVersion
-						docker push $dockerRegistry/$dockerUsername:$imageVersion 
+						docker tag dev/wpmt-cluster-user:$imageVersion $dockerRegistry/$dockerUsername/wpmt-cluster-user:$imageVersion
+						docker push $dockerRegistry/$dockerUsername/wpmt-cluster-user:$imageVersion 
 					"""
 				}
 			}
