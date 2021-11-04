@@ -5,7 +5,7 @@ pipeline{
 		label 'jenkins-slave-agent-01'
 	}
 	environment{ 
-	dockerRegistry = "https://docker-registry.wpmt.org"
+	dockerRegistry = "docker-registry.wpmt.org"
 	dockerUsername = "docker-user"
 	}
 	// Here we declare that our Jenkins Agent will be 
@@ -41,7 +41,7 @@ pipeline{
 				script{
 					def imageVersion = readFile('VERSION')
 					sh """
-						docker tag dev/wpmt-cluster-user:$imageVersion $dockerRegistry/$dockerUsername/wpmt-cluster-user:$imageVersion
+						docker tag dev/wpmt-cluster-user:$imageVersion $dockerUsername/wpmt-cluster-user:$imageVersion
 						docker push $dockerRegistry/$dockerUsername/wpmt-cluster-user:$imageVersion 
 					"""
 				}
