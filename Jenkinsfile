@@ -33,7 +33,7 @@ pipeline{
 					"""
 				}
 			}
-		}
+		}	
 		stage('Push Docker image'){
 			agent{
 				label 'jenkins-slave-agent-01'
@@ -44,7 +44,7 @@ pipeline{
 					sh """
 						docker login $dockerRegistry -u $dockerCredentials_USR -p $dockerCredentials_PSW
 						docker tag dev/$dockerRepo:$imageVersion $dockerCredentials_USR/$dockerRepo:$imageVersion
-						docker push $dockerRegistry/$dockerCredentials_USR/$dockerRepo:$imageVersion 
+						docker push $dockerCredentials_USR/$dockerRepo:$imageVersion 
 					"""
 				}
 			}
