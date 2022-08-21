@@ -15,14 +15,14 @@ app = FastAPI()
 
 __master_url__ = "http://master.wpmt.org"
 
-__cluster_name__ = "cluster-01.wpmt.org"
-__cluster_url__ = "http://cluster-01.wpmt.org"
-__cluster_logger_url__ = "http://cluster-01.wpmt.org/log/save"
+__cluster_name__ = "cluster-eu01.wpmt.org"
+__cluster_url__ = "http://cluster-eu01.wpmt.org"
+__cluster_logger_url__ = "http://cluster-eu01.wpmt.org/log/save"
 __cluster_locale__ = "EU"
 __cluster_user_count__ = None
 
 __mysql_host__ = "localhost"
-__mysql_db__ = "cluster_01"
+__mysql_db__ = "cluster_eu01"
 __mysql_user__ = "cluser_eu01_user"
 # The API should receive the password via system's environment variable
 # This variable is set by Kubernetes via the "secretGenerator.yaml" file
@@ -32,9 +32,9 @@ __mysql_user__ = "cluser_eu01_user"
 __mysql_pass__ = "kP6hE3zE7aJ7nQ6i"
 
 __app_headers__ = {
-    'Host': 'cluster-01.wpmt.org',
+    'Host': 'cluster-eu01.wpmt.org',
     'User-Agent': 'WPMT-Auth/1.0',
-    'Referer': 'http://cluster-01.wpmt.org/user',
+    'Referer': 'http://cluster-eu01.wpmt.org/user',
     'Content-Type': 'application/json'
 }
 
@@ -235,7 +235,7 @@ def cluster_uid_generate(name: str, email: str, password: str, service: str, cou
                     headers = {
                         'Host': 'master.wpmt.tech',
                         'User-Agent': 'WPMT-Cluster/1.0',
-                        'Referer': 'https://cluster-01.wpmt.tech/api/user/signup',
+                        'Referer': 'https://cluster-eu01.wpmt.tech/api/user/signup',
                         'Content-Type': 'application/json'
                     }
                     body = {
